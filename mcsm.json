@@ -1,0 +1,14 @@
+{
+	"mcsm": {
+		"socket": "/home/nbrecht/Documents/MC/mcsm.sock",
+		"rootdir": "/home/nbrecht/Documents/MC/"
+	},
+	"servers": {
+		"defaults": {
+			"start-on-boot": false,
+			"jarfile": "",
+			"jvm": "java",
+			"args": "-Xmx2G -Xms1G"
+		}
+	}
+}
