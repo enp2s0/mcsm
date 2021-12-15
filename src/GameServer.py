@@ -21,6 +21,7 @@ class ServerManager():
 
 		# stores all running server objects
 		self.running_servers = {}
+		self.stopping = False
 
 		needs_start = [s for s in self.avail_servers if self.read_server_cfg(s)["start-on-boot"]]
 		self.log.info(f"servers marked for startup: {needs_start}")
@@ -94,6 +95,13 @@ class ServerManager():
 		server_obj.start()
 		self.running_servers[servername] = server_obj
 
+	def stop_server(self, servername):
+		if servername not in self.running_servers:
+			self.log.warn(f"cannot stop '{servername}', server is not running!")
+			return None
+
+		self.running_servers[servername].stop()
+
 	# Runs the update method on all tracked server objects, and deletes stopped ones.
 	def update(self):
 		needs_del = []
@@ -103,6 +111,22 @@ class ServerManager():
 				needs_del.append(name)
 		for name in needs_del:
 			del self.running_servers[name]
+
+		# Shoud we requeue the update method?
+		if self.stopping and len(self.running_servers) == 0:
+			return False
+		return True
+
+	def quit(self):
+		self.log.info(f"stopping ServerManager...")
+		for name, sobj in self.running_servers.items():
+			sobj.stop()
+
+		self.stopping = True
+		while len(self.running_servers) > 0:
+			pass
+
+		self.log.info(f"all servers stopped. Goodbye.")
 
 	# Reads the config file for a given server.
 	def read_server_cfg(self, servername):
@@ -150,6 +174,7 @@ class GameServer():
 
 	# Stops a server, and sets state to allow for kill if it refuses to stop.
 	def stop(self):
+		self.log.info(f"stopping '{self.servername}'...")
 		self.server_process.terminate()
 		self.state = GameServer.STOPPING
 
@@ -172,6 +197,10 @@ class GameServer():
 		elif self.state == GameServer.STOPPING:
 			# The server was told to stop but hung, kill it.
 			# Set the state again to reset the counter.
+			if poll is not None:
+				self.log.info(f"PID {self.server_process.pid} ('{self.servername}') stopped.")
+				self.setstate(GameServer.STOPPED)
+
 			if self.stateage() > 30:
 				self.setstate(GameServer.STOPPING)
 				self.server_process.kill()

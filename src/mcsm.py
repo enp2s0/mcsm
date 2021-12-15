@@ -46,8 +46,8 @@ def make_socket(socketpath):
 def mgr_poll_loop():
 	global mgr
 
-	mgr.update()
-	threading.Timer(1, mgr_poll_loop).start()
+	if mgr.update():
+		threading.Timer(1, mgr_poll_loop).start()
 
 cfgfile = parse_args(sys.argv)
 config = read_cfg_file(cfgfile)
@@ -82,9 +82,19 @@ while True:
 			mgr.clone_server(tokens[1], tokens[2])
 		elif tokens[0] == "start":
 			mgr.start_server(tokens[1])
+		elif tokens[0] == "stop":
+			mgr.stop_server(tokens[1])
+		elif tokens[0] == "quit":
+			break
 		else:
 			log.warn(f"unknown command!")
 	else:
 		log.warn("client opened socket but sent no data!")
 
 	conn.close()
+
+log.info("mcsm shutting down...")
+mgr.quit()
+
+log.info("waiting for all threads to finish...")
+sys.exit(0)
