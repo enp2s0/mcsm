@@ -5,6 +5,7 @@ import os, os.path
 import sys
 import json
 import shlex
+import threading
 
 import Log
 import GameServer
@@ -42,6 +43,12 @@ def make_socket(socketpath):
 	log.info(f"listening on {socketpath}.")
 	return server
 
+def mgr_poll_loop():
+	global mgr
+
+	mgr.update()
+	threading.Timer(1, mgr_poll_loop).start()
+
 cfgfile = parse_args(sys.argv)
 config = read_cfg_file(cfgfile)
 
@@ -51,6 +58,9 @@ os.chdir(rootdir)
 
 mgr = GameServer.ServerManager(log, config["servers"])
 server = make_socket(config["mcsm"]["socket"])
+
+log.info("starting update poller...")
+mgr_poll_loop()
 
 while True:
 	server.listen()
@@ -74,7 +84,6 @@ while True:
 			mgr.start_server(tokens[1])
 		else:
 			log.warn(f"unknown command!")
-
 	else:
 		log.warn("client opened socket but sent no data!")
 
