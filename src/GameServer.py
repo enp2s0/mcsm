@@ -35,7 +35,7 @@ class ServerManager():
 
 		if servername in self.avail_servers:
 			self.log.warn(f"cannot create '{servername}': server already exists!")
-			return None
+			return "create failed"
 
 		jarpath = "jars/" + jarname
 		serverpath = "servers/" + servername + "/"
@@ -58,12 +58,12 @@ class ServerManager():
 
 		self.avail_servers.append(servername)
 		self.log.info(f"finished creating server '{servername}'!")
-		return servername
+		return "create ok"
 
 	def delete_server(self, servername):
 		if servername not in self.avail_servers:
 			self.log.warn(f"cannot delete server '{servername}' that does not exist!")
-			return None
+			return "delete failed"
 
 		serverpath = "servers/" + servername + "/"
 
@@ -74,7 +74,7 @@ class ServerManager():
 		rmtree(serverpath)
 
 		self.log.info(f"finished deleting server '{servername}'!")
-		return servername
+		return "delete ok"
 
 	def clone_server(self, oldsrv, newsrv):
 		oldpath = "servers/" + oldsrv
@@ -84,23 +84,26 @@ class ServerManager():
 		copytree(oldpath, newpath)
 		self.avail_servers.append(newsrv)
 		self.log.info(f"clone into '{newsrv}' complete.")
+		return "clone ok"
 
 	# Builds a server object and runs it.
 	def start_server(self, servername):
 		servercfg = self.read_server_cfg(servername)
 		if not servercfg:
-			return None
+			return "start failed"
 
 		server_obj = GameServer(self.log, servername, servercfg)
 		server_obj.start()
 		self.running_servers[servername] = server_obj
+		return "start ok"
 
 	def stop_server(self, servername):
 		if servername not in self.running_servers:
 			self.log.warn(f"cannot stop '{servername}', server is not running!")
-			return None
+			return "stop failed"
 
 		self.running_servers[servername].stop()
+		return "stop ok"
 
 	# Runs the update method on all tracked server objects, and deletes stopped ones.
 	def update(self):
